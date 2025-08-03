@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Impact on UAE Labor Market</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Added for searchable dropdowns -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js" defer></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="text-center">
+                <h1 class="text-3xl font-bold text-gray-900">AI Impact on UAE Labor Market</h1>
+                <p class="mt-2 text-lg text-gray-600">Automatability Analysis of Job Categories</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Stats Overview -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-2xl font-bold text-blue-600" id="total-jobs">-</div>
+                <div class="text-sm text-gray-500">Total Jobs Analyzed</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-2xl font-bold text-green-600" id="job-categories">-</div>
+                <div class="text-sm text-gray-500">Job Categories</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-2xl font-bold text-orange-600" id="avg-auto-score">-</div>
+                <div class="text-sm text-gray-500">Avg Automation %</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-2xl font-bold text-purple-600" id="avg-manual-score">-</div>
+                <div class="text-sm text-gray-500">Avg Manual Work %</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filters -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Select Job Category to Analyze</h2>
+            <div class="flex flex-wrap gap-4 items-center">
+                <div class="flex-grow min-w-[200px]"><select id="level4-filter"></select></div>
+                <div class="flex-grow min-w-[200px] hidden" id="job-filter-container"><select id="job-filter"></select></div>
+                <button id="reset-filters" class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors hidden">
+                    Reset Selection
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Category Stats (hidden initially) -->
+    <section id="category-stats" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 hidden">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-2xl font-bold text-blue-600" id="category-job-count">-</div>
+                <div class="text-sm text-gray-500">Jobs in Category</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-2xl font-bold text-orange-600" id="category-avg-auto">-</div>
+                <div class="text-sm text-gray-500">Category Avg Automation %</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-2xl font-bold text-purple-600" id="category-avg-manual">-</div>
+                <div class="text-sm text-gray-500">Category Avg Manual %</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Charts Section (hidden initially) -->
+    <section id="charts-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 hidden">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Category Analysis: Automation Score Distribution</h3>
+            <div class="h-64">
+                <canvas id="automation-chart"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- Job Cards Section (hidden initially) -->
+    <section id="job-cards-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 hidden">
+        <div class="mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Jobs in Category</h3>
+        </div>
+        <div id="job-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <!-- Job cards will be populated here -->
+        </div>
+        <div id="load-more-container" class="text-center mt-8 hidden">
+            <button id="load-more-btn" class="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                Load More Jobs
+            </button>
+        </div>
+    </section>
+
+    <!-- Job Detail Section (hidden initially) -->
+    <section id="job-detail-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 hidden">
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 id="job-detail-title" class="text-xl font-bold text-gray-900"></h3>
+                <p id="job-detail-category" class="text-sm text-gray-500 mt-1"></p>
+            </div>
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="text-center">
+                        <div id="job-auto-score" class="text-2xl font-bold text-orange-600">-</div>
+                        <div class="text-sm text-gray-500">Automation %</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="job-manual-score" class="text-2xl font-bold text-purple-600">-</div>
+                        <div class="text-sm text-gray-500">Manual Work %</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="job-total-tasks" class="text-2xl font-bold text-blue-600">-</div>
+                        <div class="text-sm text-gray-500">Total Tasks</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="job-auto-tasks" class="text-2xl font-bold text-red-600">-</div>
+                        <div class="text-sm text-gray-500">Automatable</div>
+                    </div>
+                </div>
+            </div>
+            <!-- *** JOB DESCRIPTION SECTION REMOVED *** -->
+            <div class="px-6 py-4">
+                <h4 class="text-lg font-semibold text-gray-900 mb-4">Automatability Analysis</h4>
+                <div id="tasks-analysis" class="space-y-4"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Loading indicator -->
+    <div id="loading" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl flex items-center">
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
+            <span class="text-gray-700">Loading data...</span>
+        </div>
+    </div>
+    
+    <!-- ======================= CORRECTED JAVASCRIPT START ======================= -->
+    <script>
+        // --- STATE & CONFIG ---
+        let allJobsData = [];
+        let automationChart = null;
+        let currentPage = 1;
+        const jobsPerPage = 10;
+        let hasMoreJobs = false;
+        let selectedCategory = '';
+        let isLoading = false;
+        let categoryChoices = null;
+        let jobChoices = null;
+
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            loadCategories();
+            setupEventListeners();
+        });
+
+        // --- EVENT LISTENERS SETUP ---
+        function setupEventListeners() {
+            document.getElementById('level4-filter').addEventListener('change', handleCategorySelect);
+            document.getElementById('job-filter').addEventListener('change', handleJobSelect);
+            document.getElementById('load-more-btn').addEventListener('click', loadMoreJobs);
+            document.getElementById('reset-filters').addEventListener('click', resetAllFilters);
+        }
+
+        // --- EVENT HANDLERS ---
+        function handleCategorySelect(event) {
+            selectedCategory = event.detail.value;
+            if (selectedCategory) {
+                hideAllSections();
+                resetDataForNewCategory();
+                showCategoryControls();
+                loadJobsData(selectedCategory, 1);
+            } else {
+                resetAllFilters();
+            }
+        }
+
+        function handleJobSelect(event) {
+            const selectedJob = event.detail.value;
+            if (selectedJob) {
+                loadJobDetail(selectedJob);
+            } else {
+                document.getElementById('job-detail-section').classList.add('hidden');
+            }
+        }
+        
+        function loadMoreJobs() {
+            if (hasMoreJobs && !isLoading) {
+                currentPage++;
+                loadJobsData(selectedCategory, currentPage);
+            }
+        }
+
+        // --- DATA FETCHING ---
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                document.getElementById('total-jobs').textContent = stats.total_jobs;
+                document.getElementById('job-categories').textContent = stats.unique_level_4_categories;
+                document.getElementById('avg-auto-score').textContent = stats.avg_auto_score.toFixed(2) + '%';
+                document.getElementById('avg-manual-score').textContent = stats.avg_manual_score.toFixed(2) + '%';
+            } catch (error) { console.error('Error loading stats:', error); }
+        }
+
+        async function loadCategories() {
+            try {
+                const response = await fetch('/api/categories');
+                const categories = await response.json();
+                populateCategoryFilter(categories);
+            } catch (error) { console.error('Error loading categories:', error); }
+        }
+        
+        async function fetchAllJobsForChart(category) {
+            try {
+                const response = await fetch(`/api/jobs?category=${encodeURIComponent(category)}&fetch_all=true`);
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching data for chart:', error);
+                return [];
+            }
+        }
+
+        async function loadJobsData(category, page = 1) {
+            if (isLoading) return;
+            isLoading = true;
+            showLoading(true);
+            
+            try {
+                const response = await fetch(`/api/jobs?category=${encodeURIComponent(category)}&page=${page}&per_page=${jobsPerPage}`);
+                const data = await response.json();
+                
+                if (page === 1) {
+                    allJobsData = data.jobs;
+                    updateCategoryStats(data.category_stats);
+                    clearJobCards();
+                    fetchAllJobsForChart(category).then(chartData => {
+                        updateAutomationChart(chartData);
+                    });
+                } else {
+                    allJobsData = [...allJobsData, ...data.jobs];
+                }
+                
+                hasMoreJobs = data.has_more;
+                populateJobFilter(allJobsData);
+                renderJobCards(data.jobs);
+                updateLoadMoreButton();
+                
+            } catch (error) {
+                console.error('Error loading jobs data:', error);
+            } finally {
+                isLoading = false;
+                showLoading(false);
+            }
+        }
+
+        async function loadJobDetail(jobTitle) {
+            showLoading(true);
+            try {
+                const response = await fetch(`/api/job/${encodeURIComponent(jobTitle)}`);
+                const job = await response.json();
+                displayJobDetail(job);
+            } catch (error) {
+                console.error('Error loading job detail:', error);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // --- UI MANIPULATION & RENDERING ---
+        function hideAllSections() {
+            ['category-stats', 'charts-section', 'job-cards-section', 'job-detail-section'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById('job-filter-container').classList.add('hidden');
+            document.getElementById('reset-filters').classList.add('hidden');
+        }
+
+        function showCategoryControls() {
+            document.getElementById('job-filter-container').classList.remove('hidden');
+            document.getElementById('reset-filters').classList.remove('hidden');
+        }
+
+        function resetDataForNewCategory() {
+            allJobsData = [];
+            currentPage = 1;
+            hasMoreJobs = false;
+            if (jobChoices) jobChoices.clearStore();
+        }
+
+        function resetAllFilters() {
+            if(categoryChoices) categoryChoices.clearStore();
+            if(jobChoices) jobChoices.clearStore();
+            selectedCategory = '';
+            hideAllSections();
+            resetDataForNewCategory();
+            loadCategories();
+        }
+        
+        function populateCategoryFilter(categories) {
+             const level4Filter = document.getElementById('level4-filter');
+             if(categoryChoices) categoryChoices.destroy();
+             
+             categoryChoices = new Choices(level4Filter, {
+                searchEnabled: true,
+                itemSelectText: '',
+                placeholder: true,
+                placeholderValue: 'Select a Category...'
+             });
+             
+             const choices = categories.map(cat => ({ value: cat, label: cat }));
+             choices.unshift({ value: '', label: 'Select a Category...', placeholder: true });
+             categoryChoices.setChoices(choices, 'value', 'label', true);
+        }
+
+        function populateJobFilter(jobs) {
+            const jobFilter = document.getElementById('job-filter');
+            if(!jobChoices) {
+                jobChoices = new Choices(jobFilter, {
+                    searchEnabled: true,
+                    itemSelectText: '',
+                    placeholder: true,
+                    placeholderValue: 'Select a Job...'
+                });
+            }
+
+            const uniqueJobs = [...new Set(jobs.map(job => job.Job_Title))].sort();
+            const choices = uniqueJobs.map(job => ({ value: job, label: job }));
+            choices.unshift({ value: '', label: 'Select a Job...', placeholder: true });
+
+            const currentVal = jobChoices.getValue(true);
+            jobChoices.setChoices(choices, 'value', 'label', true);
+            if(currentVal) jobChoices.setChoiceByValue(currentVal);
+        }
+
+        function updateCategoryStats(stats) {
+            document.getElementById('category-job-count').textContent = stats.total_jobs;
+            document.getElementById('category-avg-auto').textContent = stats.avg_auto_score.toFixed(2) + '%';
+            document.getElementById('category-avg-manual').textContent = stats.avg_manual_score.toFixed(2) + '%';
+            document.getElementById('category-stats').classList.remove('hidden');
+        }
+        
+        function clearJobCards() {
+            document.getElementById('job-cards-container').innerHTML = '';
+        }
+
+        function renderJobCards(jobsToRender) {
+            const container = document.getElementById('job-cards-container');
+            jobsToRender.forEach(job => {
+                const card = createJobCard(job);
+                container.appendChild(card);
+            });
+            document.getElementById('job-cards-section').classList.remove('hidden');
+        }
+
+        // *** JOB CARD HTML UPDATED ***
+        function createJobCard(job) {
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-lg shadow hover:shadow-lg transition-shadow duration-200 cursor-pointer p-4 flex flex-col justify-between';
+            card.innerHTML = `
+                <div>
+                    <h4 class="text-md font-semibold text-gray-900 mb-4 h-12 truncate" title="${job.Job_Title}">${job.Job_Title}</h4>
+                    <div class="flex justify-around items-center text-center pt-4 border-t">
+                        <div>
+                            <div class="text-lg font-bold ${job.auto_score > 60 ? 'text-red-600' : 'text-green-600'}">${job.auto_score.toFixed(2)}%</div>
+                            <div class="text-xs text-gray-500 mt-1">Automation</div>
+                        </div>
+                        <div>
+                            <div class="text-lg font-bold text-purple-600">${job.manual_score.toFixed(2)}%</div>
+                            <div class="text-xs text-gray-500 mt-1">Manual</div>
+                        </div>
+                    </div>
+                </div>`;
+            card.addEventListener('click', () => {
+                if (jobChoices) jobChoices.setChoiceByValue(job.Job_Title);
+                loadJobDetail(job.Job_Title);
+            });
+            return card;
+        }
+
+        function displayJobDetail(job) {
+            document.getElementById('job-detail-title').textContent = job.Job_Title;
+            document.getElementById('job-detail-category').textContent = `${job.level_4_name} (${job.level_4_code})`;
+            document.getElementById('job-auto-score').textContent = job.auto_score.toFixed(2) + '%';
+            document.getElementById('job-manual-score').textContent = job.manual_score.toFixed(2) + '%';
+            const totalTasks = job.automatability_tasks.length;
+            const automatableTaskCount = job.automatability_tasks.filter(t => t.automatability_flag === 'Automatable').length;
+            document.getElementById('job-total-tasks').textContent = totalTasks;
+            document.getElementById('job-auto-tasks').textContent = automatableTaskCount;
+            // *** LINE FOR JOB DESCRIPTION REMOVED ***
+            
+            const tasksContainer = document.getElementById('tasks-analysis');
+            tasksContainer.innerHTML = '';
+            job.automatability_tasks.forEach((task, index) => {
+                const taskElement = document.createElement('div');
+                taskElement.className = 'border rounded-lg p-4 bg-gray-50';
+                const flagColor = task.automatability_flag === 'Automatable' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
+                taskElement.innerHTML = `<h5 class="font-semibold text-gray-900 pr-4">Task ${index + 1}: ${task.task} <span class="px-2 py-1 text-xs font-medium rounded-full ${flagColor} float-right">${task.automatability_flag}</span></h5><p class="text-gray-600 text-sm mt-2"><strong>Justification:</strong> ${task.justification}</p>`;
+                tasksContainer.appendChild(taskElement);
+            });
+            
+            document.getElementById('job-detail-section').classList.remove('hidden');
+            document.getElementById('job-detail-section').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function updateAutomationChart(jobsForChart) {
+            if (!jobsForChart || jobsForChart.length === 0) {
+                 document.getElementById('charts-section').classList.add('hidden');
+                 return;
+            };
+            
+            const ctx = document.getElementById('automation-chart').getContext('2d');
+            if (automationChart) automationChart.destroy();
+            
+            const scores = jobsForChart.map(job => job.auto_score);
+            const bins = [0, 20, 40, 60, 80, 101];
+            const binCounts = new Array(bins.length - 1).fill(0);
+            
+            scores.forEach(score => {
+                for (let i = 0; i < bins.length - 1; i++) {
+                    if (score >= bins[i] && score < bins[i + 1]) {
+                        binCounts[i]++;
+                        break;
+                    }
+                }
+            });
+            
+            automationChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['0-19%', '20-39%', '40-59%', '60-79%', '80-100%'],
+                    datasets: [{
+                        label: `Number of Jobs (Total: ${scores.length})`,
+                        data: binCounts,
+                        backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+                }
+            });
+            
+            document.getElementById('charts-section').classList.remove('hidden');
+        }
+
+        function updateLoadMoreButton() {
+            document.getElementById('load-more-container').classList.toggle('hidden', !hasMoreJobs);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('hidden', !show);
+        }
+    </script>
+    <!-- ======================== CORRECTED JAVASCRIPT END ======================== -->
+</body>
+</html>
