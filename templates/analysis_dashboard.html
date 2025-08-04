@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Impact on UAE Labor Market - Analysis Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Added for searchable dropdowns -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js" defer></script>
+    
+    <style>
+        .modern-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            transition: all 0.3s ease;
+        }
+        
+        .modern-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
+        }
+
+        .text-truncate {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .choices__list--single .choices__item {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100%;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+
+        .chart-container-small {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-lg border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex justify-between items-center">
+                <div class="text-left">
+                    <h1 class="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">AI Impact on UAE Labor Market</h1>
+                    <p class="mt-2 text-lg text-gray-600">Task-Level Automatability Analysis</p>
+                </div>
+                <div class="text-right">
+                    <a href="/explorer" class="inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200">
+                        Switch to Job Explorer →
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Stats Overview -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+            <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-blue-600" id="total-jobs">-</div>
+                <div class="text-sm text-gray-500 mt-1">Total Jobs Analyzed</div>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-green-600" id="job-categories">-</div>
+                <div class="text-sm text-gray-500 mt-1">Job Categories</div>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-indigo-600" id="sector-count">-</div>
+                <div class="text-sm text-gray-500 mt-1">Total Sectors</div>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-orange-600" id="avg-auto-score">-</div>
+                <div class="text-sm text-gray-500 mt-1">Avg Automation Score</div>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-purple-600" id="avg-manual-score">-</div>
+                <div class="text-sm text-gray-500 mt-1">Avg Manual Work %</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filters -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+        <div class="modern-card rounded-xl shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Analysis Filters</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Filter Level</label>
+                    <select id="level-filter" class="w-full"></select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                    <select id="category-filter" class="w-full"></select>
+                </div>
+                <button id="reset-filters" class="px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all duration-200 shadow-md hidden">
+                    Reset All Filters
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Task Analysis Stats -->
+    <section id="task-stats" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 hidden">
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-6">
+            <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-blue-600" id="total-tasks">-</div>
+                <div class="text-sm text-gray-500 mt-1">Total Tasks</div>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-green-600" id="total-jobs-filtered">-</div>
+                <div class="text-sm text-gray-500 mt-1">Jobs in Selection</div>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-red-600" id="automatable-tasks">-</div>
+                <div class="text-sm text-gray-500 mt-1">Automatable Tasks</div>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-gray-600" id="non-automatable-tasks">-</div>
+                <div class="text-sm text-gray-500 mt-1">Non-Automatable Tasks</div>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-orange-600" id="selection-avg-auto">-</div>
+                <div class="text-sm text-gray-500 mt-1">Selection Avg Automation Score</div>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-purple-600" id="selection-avg-manual">-</div>
+                <div class="text-sm text-gray-500 mt-1">Selection Avg Manual Score</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Phase 1: Original Charts -->
+    <section id="original-charts" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="modern-card rounded-xl shadow-lg p-8">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Automation Score Distribution</h3>
+                <div class="chart-container">
+                    <canvas id="automation-score-chart"></canvas>
+                </div>
+            </div>
+            <div class="modern-card rounded-xl shadow-lg p-8">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Risk State Analysis</h3>
+                <div class="chart-container">
+                    <canvas id="risk-state-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Phase 2: High-Level Summary -->
+    <section id="summary-charts" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="modern-card rounded-xl shadow-lg p-8">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Automation Status Overview</h3>
+                <div class="chart-container-small">
+                    <canvas id="automation-status-chart"></canvas>
+                </div>
+            </div>
+            <div class="modern-card rounded-xl shadow-lg p-8">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Task Type Distribution</h3>
+                <div class="chart-container-small">
+                    <canvas id="task-type-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Phase 3: Detailed Analysis -->
+    <section id="detailed-analysis" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 hidden">
+        <div class="modern-card rounded-xl shadow-lg p-8 mb-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-6">Automation Potential by Task Type</h3>
+            <div class="chart-container">
+                <canvas id="automation-by-type-chart"></canvas>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="modern-card rounded-xl shadow-lg p-8">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Top Drivers for Automation</h3>
+                <div class="chart-container">
+                    <canvas id="automation-drivers-chart"></canvas>
+                </div>
+            </div>
+            <div class="modern-card rounded-xl shadow-lg p-8">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Top Barriers to Automation</h3>
+                <div class="chart-container">
+                    <canvas id="automation-barriers-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Phase 4: Risk Matrix -->
+    <section id="matrix-analysis" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 hidden">
+        <div class="modern-card rounded-xl shadow-lg p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-900">Automation Risk Matrix Analysis</h3>
+                <div class="text-sm text-gray-600">
+                    <span id="matrix-categories-count" class="font-semibold">-</span> Level 4 Categories
+                </div>
+            </div>
+            <div style="position: relative; height: 600px; width: 100%;">
+                <canvas id="automation-matrix-chart"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- Loading indicator -->
+    <div id="loading" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-8 rounded-xl shadow-2xl flex items-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-4"></div>
+            <span class="text-gray-700 text-lg">Loading data...</span>
+        </div>
+    </div>
+
+<script>
+// STATE & CONFIG
+let taskAnalysisData = null;
+let matrixData = null;
+let automationStatusChart = null;
+let taskTypeChart = null;
+let automationScoreChart = null;
+let riskStateChart = null;
+let automationMatrixChart = null;
+let automationByTypeChart = null;
+let automationDriversChart = null;
+let automationBarriersChart = null;
+let selectedCategory = '';
+let selectedLevel = '4';
+let isLoading = false;
+let levelChoices = null;
+let categoryChoices = null;
+
+// INITIALIZATION
+document.addEventListener('DOMContentLoaded', function() {
+    loadStats();
+    loadLevels();
+    setupEventListeners();
+});
+
+// EVENT LISTENERS
+function setupEventListeners() {
+    document.getElementById('level-filter').addEventListener('change', handleLevelSelect);
+    document.getElementById('category-filter').addEventListener('change', handleCategorySelect);
+    document.getElementById('reset-filters').addEventListener('click', resetAllFilters);
+}
+
+function handleLevelSelect(event) {
+    selectedLevel = event.detail.value;
+    if (selectedLevel) {
+        loadCategories(selectedLevel);
+        resetCategoryData();
+    }
+}
+
+function handleCategorySelect(event) {
+    selectedCategory = event.detail.value;
+    if (selectedCategory) {
+        hideAllSections();
+        showResetButton();
+        loadTaskAnalysis(selectedCategory, selectedLevel);
+    } else {
+        hideAllSections();
+        resetCategoryData();
+    }
+}
+
+// DATA FETCHING
+async function loadStats() {
+    try {
+        const response = await fetch('/api/stats');
+        const stats = await response.json();
+        document.getElementById('total-jobs').textContent = stats.total_jobs.toLocaleString();
+        document.getElementById('job-categories').textContent = stats.unique_level_4_categories;
+        document.getElementById('sector-count').textContent = stats.sector_count;
+        document.getElementById('avg-auto-score').textContent = stats.avg_auto_score.toFixed(1) + '%';
+        document.getElementById('avg-manual-score').textContent = stats.avg_manual_score.toFixed(1) + '%';
+    } catch (error) { 
+        console.error('Error loading stats:', error); 
+    }
+}
+
+async function loadLevels() {
+    try {
+        const response = await fetch('/api/levels');
+        const levels = await response.json();
+        populateLevelFilter(levels);
+        if (levelChoices) {
+            levelChoices.setChoiceByValue('4');
+            selectedLevel = '4';
+            loadCategories('4');
+        }
+    } catch (error) { 
+        console.error('Error loading levels:', error); 
+    }
+}
+
+async function loadCategories(level) {
+    try {
+        const response = await fetch(`/api/categories?level=${level}`);
+        const categories = await response.json();
+        populateCategoryFilter(categories);
+    } catch (error) { 
+        console.error('Error loading categories:', error); 
+    }
+}
+
+async function loadTaskAnalysis(category, level) {
+    if (isLoading) return;
+    isLoading = true;
+    showLoading(true);
+    
+    try {
+        const [taskResponse, matrixResponse, riskResponse, jobsResponse] = await Promise.all([
+            fetch(`/api/task_analysis?category=${encodeURIComponent(category)}&level=${level}`),
+            fetch(`/api/automation_matrix?category=${encodeURIComponent(category)}&level=${level}`),
+            fetch(`/api/risk_distribution?category=${encodeURIComponent(category)}&level=${level}`),
+            fetch(`/api/jobs?category=${encodeURIComponent(category)}&level=${level}&fetch_all=true`)
+        ]);
+        
+        taskAnalysisData = await taskResponse.json();
+        matrixData = await matrixResponse.json();
+        const riskData = await riskResponse.json();
+        const jobsData = await jobsResponse.json();
+        
+        updateTaskStats(taskAnalysisData);
+        updateAllCharts(taskAnalysisData, matrixData, riskData, jobsData);
+        showAllSections();
+        
+    } catch (error) {
+        console.error('Error loading task analysis:', error);
+    } finally {
+        isLoading = false;
+        showLoading(false);
+    }
+}
+
+// UI FUNCTIONS
+function hideAllSections() {
+    ['task-stats', 'original-charts', 'summary-charts', 'detailed-analysis', 'matrix-analysis'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+    });
+    document.getElementById('reset-filters').classList.add('hidden');
+}
+
+function showAllSections() {
+    ['task-stats', 'original-charts', 'summary-charts', 'detailed-analysis', 'matrix-analysis'].forEach(id => {
+        document.getElementById(id).classList.remove('hidden');
+    });
+}
+
+function showResetButton() {
+    document.getElementById('reset-filters').classList.remove('hidden');
+}
+
+function resetCategoryData() {
+    selectedCategory = '';
+    hideAllSections();
+    if (categoryChoices) {
+        categoryChoices.clearStore();
+        categoryChoices.setChoices([{ value: '', label: 'Select a Category...', placeholder: true }], 'value', 'label', true);
+    }
+}
+
+function resetAllFilters() {
+    if (levelChoices) levelChoices.setChoiceByValue('4');
+    if (categoryChoices) categoryChoices.clearStore();
+    selectedCategory = '';
+    selectedLevel = '4';
+    hideAllSections();
+    loadCategories('4');
+}
+
+function populateLevelFilter(levels) {
+    const levelFilter = document.getElementById('level-filter');
+    if (levelChoices) levelChoices.destroy();
+    
+    levelChoices = new Choices(levelFilter, {
+        searchEnabled: false,
+        itemSelectText: '',
+        placeholder: true,
+        placeholderValue: 'Select Level...'
+    });
+    
+    const choices = levels.map(level => ({ 
+        value: level.level.toString(), 
+        label: `${level.name} (${level.count} categories)` 
+    }));
+    choices.unshift({ value: '', label: 'Select Level...', placeholder: true });
+    levelChoices.setChoices(choices, 'value', 'label', true);
+}
+
+function populateCategoryFilter(categories) {
+    const categoryFilter = document.getElementById('category-filter');
+    if (categoryChoices) categoryChoices.destroy();
+    
+    categoryChoices = new Choices(categoryFilter, {
+        searchEnabled: true,
+        itemSelectText: '',
+        placeholder: true,
+        placeholderValue: 'Select a Category...'
+    });
+    
+    const choices = categories.map(cat => ({ 
+        value: cat.name, 
+        label: `${cat.name} (${cat.count} jobs)` 
+    }));
+    choices.unshift({ value: '', label: 'Select a Category...', placeholder: true });
+    categoryChoices.setChoices(choices, 'value', 'label', true);
+}
+
+function updateTaskStats(data) {
+    document.getElementById('total-tasks').textContent = data.total_tasks.toLocaleString();
+    document.getElementById('total-jobs-filtered').textContent = data.total_jobs.toLocaleString();
+    document.getElementById('automatable-tasks').textContent = data.automation_status.automatable.toLocaleString();
+    document.getElementById('non-automatable-tasks').textContent = data.automation_status.non_automatable.toLocaleString();
+    
+    const totalTasks = data.total_tasks;
+    const automatableTasks = data.automation_status.automatable;
+    const selectionAutoScore = totalTasks > 0 ? (automatableTasks / totalTasks) * 100 : 0;
+    const selectionManualScore = 100 - selectionAutoScore;
+    
+    document.getElementById('selection-avg-auto').textContent = selectionAutoScore.toFixed(1) + '%';
+    document.getElementById('selection-avg-manual').textContent = selectionManualScore.toFixed(1) + '%';
+}
+
+function updateAllCharts(data, matrixData, riskData, jobsData) {
+    updateAutomationScoreChart(jobsData);
+    updateRiskStateChart(riskData);
+    updateAutomationStatusChart(data);
+    updateTaskTypeChart(data);
+    updateAutomationByTypeChart(data);
+    updateAutomationDriversChart(data);
+    updateAutomationBarriersChart(data);
+    updateAutomationMatrixChart(matrixData);
+}
+
+// CHART FUNCTIONS
+function updateAutomationScoreChart(jobsData) {
+    const ctx = document.getElementById('automation-score-chart').getContext('2d');
+    if (automationScoreChart) automationScoreChart.destroy();
+    
+    if (!jobsData || jobsData.length === 0) {
+        automationScoreChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['No Data'],
+                datasets: [{
+                    data: [0],
+                    backgroundColor: ['rgba(156, 163, 175, 0.5)']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+        return;
+    }
+    
+    const scores = jobsData.map(job => job.auto_score);
+    const bins = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 101];
+    const binCounts = new Array(bins.length - 1).fill(0);
+    
+    scores.forEach(score => {
+        for (let i = 0; i < bins.length - 1; i++) {
+            if (score >= bins[i] && score < bins[i + 1]) {
+                binCounts[i]++;
+                break;
+            }
+        }
+    });
+    
+    automationScoreChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['0-9%', '10-19%', '20-29%', '30-39%', '40-49%', '50-59%', '60-69%', '70-79%', '80-89%', '90-100%'],
+            datasets: [{
+                label: `Number of Jobs (Total: ${scores.length})`,
+                data: binCounts,
+                backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { font: { size: 12, weight: 'bold' } }
+                }
+            },
+            scales: { 
+                y: { 
+                    beginAtZero: true, 
+                    ticks: { precision: 0, font: { size: 11 } },
+                    grid: { display: false }
+                },
+                x: {
+                    ticks: { font: { size: 11 } },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+}
+
+function updateRiskStateChart(riskData) {
+    const ctx = document.getElementById('risk-state-chart').getContext('2d');
+    if (riskStateChart) riskStateChart.destroy();
+    
+    riskStateChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Low Risk (0-29%)', 'Medium Risk (30-59%)', 'High Risk (60%+)'],
+            datasets: [{
+                data: [riskData.low_risk, riskData.medium_risk, riskData.high_risk],
+                backgroundColor: ['rgba(16, 185, 129, 0.8)', 'rgba(245, 158, 11, 0.8)', 'rgba(239, 68, 68, 0.8)'],
+                borderColor: ['rgba(16, 185, 129, 1)', 'rgba(245, 158, 11, 1)', 'rgba(239, 68, 68, 1)'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { font: { size: 12, weight: 'bold' }, padding: 20 }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const percentage = ((context.parsed / riskData.total) * 100).toFixed(1);
+                            return `${context.label}: ${context.parsed} jobs (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateAutomationStatusChart(data) {
+    const ctx = document.getElementById('automation-status-chart').getContext('2d');
+    if (automationStatusChart) automationStatusChart.destroy();
+    
+    automationStatusChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Automatable', 'Non-Automatable'],
+            datasets: [{
+                data: [data.automation_status.automatable, data.automation_status.non_automatable],
+                backgroundColor: ['rgba(239, 68, 68, 0.8)', 'rgba(34, 197, 94, 0.8)'],
+                borderColor: ['rgba(239, 68, 68, 1)', 'rgba(34, 197, 94, 1)'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { font: { size: 12, weight: 'bold' }, padding: 20 }
+                }
+            }
+        }
+    });
+}
+
+function updateTaskTypeChart(data) {
+    const ctx = document.getElementById('task-type-chart').getContext('2d');
+    if (taskTypeChart) taskTypeChart.destroy();
+    
+    const taskTypeData = [
+        data.task_type_distribution.primary,
+        data.task_type_distribution.secondary,
+        data.task_type_distribution.ancillary
+    ];
+    
+    taskTypeChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Primary', 'Secondary', 'Ancillary'],
+            datasets: [{
+                data: taskTypeData,
+                backgroundColor: ['rgba(239, 68, 68, 0.8)', 'rgba(245, 158, 11, 0.8)', 'rgba(99, 102, 241, 0.8)'],
+                borderColor: ['rgba(239, 68, 68, 1)', 'rgba(245, 158, 11, 1)', 'rgba(99, 102, 241, 1)'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { font: { size: 12, weight: 'bold' }, padding: 20 }
+                }
+            }
+        }
+    });
+}
+
+function updateAutomationByTypeChart(data) {
+    const ctx = document.getElementById('automation-by-type-chart').getContext('2d');
+    if (automationByTypeChart) automationByTypeChart.destroy();
+    
+    const taskTypes = ['Primary', 'Secondary', 'Ancillary'];
+    const automatableData = [];
+    const nonAutomatableData = [];
+    
+    taskTypes.forEach(type => {
+        const typeKey = type.toLowerCase();
+        if (data.automation_by_type[typeKey]) {
+            const typeData = data.automation_by_type[typeKey];
+            automatableData.push(typeData.automation_percentage);
+            nonAutomatableData.push(100 - typeData.automation_percentage);
+        } else {
+            automatableData.push(0);
+            nonAutomatableData.push(0);
+        }
+    });
+    
+    automationByTypeChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: taskTypes,
+            datasets: [
+                {
+                    label: 'Automatable (%)',
+                    data: automatableData,
+                    backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    borderWidth: 2
+                },
+                {
+                    label: 'Non-Automatable (%)',
+                    data: nonAutomatableData,
+                    backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                    borderColor: 'rgba(34, 197, 94, 1)',
+                    borderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            scales: {
+                x: {
+                    stacked: true,
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: { callback: function(value) { return value + '%'; } }
+                },
+                y: { stacked: true }
+            }
+        }
+    });
+}
+
+function updateAutomationDriversChart(data) {
+    const ctx = document.getElementById('automation-drivers-chart').getContext('2d');
+    if (automationDriversChart) automationDriversChart.destroy();
+    
+    if (!data.automation_drivers || data.automation_drivers.length === 0) {
+        automationDriversChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['No Data Available'],
+                datasets: [{
+                    data: [0],
+                    backgroundColor: ['rgba(156, 163, 175, 0.5)']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+        return;
+    }
+    
+    const labels = data.automation_drivers.map(item => item.reason);
+    const counts = data.automation_drivers.map(item => item.count);
+    
+    automationDriversChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Frequency Count',
+                data: counts,
+                backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                borderColor: 'rgba(34, 197, 94, 1)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            scales: {
+                x: { beginAtZero: true },
+                y: { ticks: { font: { size: 11 } } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+function updateAutomationBarriersChart(data) {
+    const ctx = document.getElementById('automation-barriers-chart').getContext('2d');
+    if (automationBarriersChart) automationBarriersChart.destroy();
+    
+    if (!data.automation_barriers || data.automation_barriers.length === 0) {
+        automationBarriersChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['No Data Available'],
+                datasets: [{
+                    data: [0],
+                    backgroundColor: ['rgba(156, 163, 175, 0.5)']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+        return;
+    }
+    
+    const labels = data.automation_barriers.map(item => item.reason);
+    const counts = data.automation_barriers.map(item => item.count);
+    
+    automationBarriersChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Frequency Count',
+                data: counts,
+                backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                borderColor: 'rgba(239, 68, 68, 1)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            scales: {
+                x: { beginAtZero: true },
+                y: { ticks: { font: { size: 11 } } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+function updateAutomationMatrixChart(matrixData) {
+    const ctx = document.getElementById('automation-matrix-chart').getContext('2d');
+    if (automationMatrixChart) automationMatrixChart.destroy();
+    
+    if (!matrixData || !matrixData.matrix_data || matrixData.matrix_data.length === 0) {
+        document.getElementById('matrix-categories-count').textContent = '0';
+        automationMatrixChart = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'No Data Available',
+                    data: [],
+                    backgroundColor: 'rgba(156, 163, 175, 0.5)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+        return;
+    }
+
+    document.getElementById('matrix-categories-count').textContent = matrixData.matrix_data.length;
+
+    const quadrantData = {
+        upper_left: [],
+        upper_right: [],
+        lower_left: [],
+        lower_right: []
+    };
+
+    matrixData.matrix_data.forEach(point => {
+        quadrantData[point.quadrant].push({
+            x: point.overall_automation_pct,
+            y: point.primary_automation_pct,
+            category: point.category,
+            totalTasks: point.total_tasks,
+            primaryTasks: point.primary_tasks,
+            totalJobs: point.total_jobs
+        });
+    });
+
+    const datasets = [
+        {
+            label: 'Niche/Specialized Low Risk Vulnerable Core',
+            data: quadrantData.upper_left,
+            backgroundColor: '#8B5CF6',
+            borderColor: '#7C3AED',
+            borderWidth: 2,
+            pointRadius: 7,
+            pointHoverRadius: 9
+        },
+        {
+            label: 'High Risk Vulnerable Core',
+            data: quadrantData.upper_right,
+            backgroundColor: '#EF4444',
+            borderColor: '#DC2626',
+            borderWidth: 2,
+            pointRadius: 7,
+            pointHoverRadius: 9
+        },
+        {
+            label: 'Safe and Stable Low Risk Secure Core',
+            data: quadrantData.lower_left,
+            backgroundColor: '#10B981',
+            borderColor: '#059669',
+            borderWidth: 2,
+            pointRadius: 7,
+            pointHoverRadius: 9
+        },
+        {
+            label: 'Transformative Hot Spot High Risk Secure Core',
+            data: quadrantData.lower_right,
+            backgroundColor: '#F59E0B',
+            borderColor: '#D97706',
+            borderWidth: 2,
+            pointRadius: 7,
+            pointHoverRadius: 9
+        }
+    ];
+
+    automationMatrixChart = new Chart(ctx, {
+        type: 'scatter',
+        data: { datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        font: { size: 13, weight: 'bold' },
+                        padding: 20,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        title: function(context) {
+                            return context[0].raw.category;
+                        },
+                        label: function(context) {
+                            const point = context.raw;
+                            return [
+                                `Overall Automation: ${point.x}%`,
+                                `Primary Task Automation: ${point.y}%`,
+                                `Total Jobs: ${point.totalJobs}`,
+                                `Total Tasks: ${point.totalTasks}`,
+                                `Primary Tasks: ${point.primaryTasks}`
+                            ];
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Overall Automation Percentage (%)',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    min: -10,
+                    max: 110,
+                    ticks: {
+                        stepSize: 10,
+                        callback: function(value) { return value + '%'; },
+                        font: { size: 12 }
+                    },
+                    grid: {
+                        color: function(context) {
+                            if (context.tick.value === 50) return '#6B7280';
+                            return 'transparent'; // Hide all other grid lines
+                        },
+                        lineWidth: function(context) {
+                            if (context.tick.value === 50) return 2;
+                            return 0; // Set width to 0 for all other lines
+                        }
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Primary Task Automation Percentage (%)',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    min: -10,
+                    max: 110,
+                    ticks: {
+                        stepSize: 10,
+                        callback: function(value) { return value + '%'; },
+                        font: { size: 12 }
+                    },
+                    grid: {
+                        color: function(context) {
+                           if (context.tick.value === 50) return '#6B7280';
+                           return 'transparent'; // Hide all other grid lines
+                        },
+                        lineWidth: function(context) {
+                            if (context.tick.value === 50) return 2;
+                            return 0; // Set width to 0 for all other lines
+                        }
+                    }
+                }
+            },
+            elements: {
+                point: { hoverBorderWidth: 4 }
+            }
+        }
+    });
+}
+
+function showLoading(show) {
+    document.getElementById('loading').classList.toggle('hidden', !show);
+}
+</script>
+</body>
+</html>
