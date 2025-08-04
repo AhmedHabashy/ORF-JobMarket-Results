@@ -49,6 +49,32 @@
             width: 100%;
         }
 
+        #chartjs-tooltip {
+            opacity: 1;
+            position: absolute;
+            background: rgba(0, 0, 0, .8);
+            color: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            pointer-events: none;
+            transform: translate(-50%, -100%);
+            transition: all .1s ease;
+            z-index: 1000;
+        }
+
+        #chartjs-tooltip table {
+            margin: 0px;
+        }
+
+        #chartjs-tooltip table thead tr th {
+            font-weight: bold;
+            padding: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #chartjs-tooltip table tbody tr td {
+            padding: 4px 8px;
+        }
         /* --- START: NEW D3 HIERARCHY STYLES --- */
     
         #hierarchy-container {
@@ -166,8 +192,43 @@
         </div>
     </section>
 
+    <!-- START: Level-based Bar Charts Section -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+    <div class="modern-card rounded-xl shadow-lg p-8">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-900">Automation by Level Categories</h2>
+            <button id="toggle-hierarchy-btn" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200">
+                Show Hierarchy Chart
+            </button>
+        </div>
+        
+        <!-- Level Charts Side by Side -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Level 1 Chart -->
+            <div class="modern-card rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Level 1 Categories</h3>
+                <div class="relative overflow-x-auto">
+                    <div style="min-width: 600px; height: 500px;">
+                        <canvas id="level-1-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Level 2 Chart -->
+            <div class="modern-card rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Level 2 Categories</h3>
+                <div class="relative overflow-x-auto">
+                    <div style="min-width: 800px; height: 500px;">
+                        <canvas id="level-2-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+</section>
+<!-- END: Level-based Bar Charts Section -->
+
     <!-- START: D3 Hierarchy Visualization Section -->
-    <section id="hierarchy-visualization-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+    <section id="hierarchy-visualization-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 hidden">
         <div id="hierarchy-container" class="modern-card rounded-xl shadow-lg bg-white relative">
             <!-- Controls -->
             <div class="absolute top-4 right-4 z-10 flex space-x-2">
@@ -339,10 +400,14 @@ let selectedLevel = '4';
 let isLoading = false;
 let levelChoices = null;
 let categoryChoices = null;
+let level1Chart = null;
+let level2Chart = null;
+let isHierarchyVisible = false;
 
 // INITIALIZATION
 document.addEventListener('DOMContentLoaded', function() {
     loadStats();
+    loadLevelCharts();
     initializeD3HierarchyChart(); // New D3 chart initialization
     loadLevels();
     setupEventListeners();
@@ -353,6 +418,26 @@ function setupEventListeners() {
     document.getElementById('level-filter').addEventListener('change', handleLevelSelect);
     document.getElementById('category-filter').addEventListener('change', handleCategorySelect);
     document.getElementById('reset-filters').addEventListener('click', resetAllFilters);
+    document.getElementById('toggle-hierarchy-btn').addEventListener('click', toggleHierarchyChart);
+}
+
+function toggleHierarchyChart() {
+    const section = document.getElementById('hierarchy-visualization-section');
+    const button = document.getElementById('toggle-hierarchy-btn');
+    
+    isHierarchyVisible = !isHierarchyVisible;
+    
+    if (isHierarchyVisible) {
+        section.classList.remove('hidden');
+        button.textContent = 'Hide Hierarchy Chart';
+        button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        button.classList.add('bg-gray-600', 'hover:bg-gray-700');
+    } else {
+        section.classList.add('hidden');
+        button.textContent = 'Show Hierarchy Chart';
+        button.classList.remove('bg-gray-600', 'hover:bg-gray-700');
+        button.classList.add('bg-blue-600', 'hover:bg-blue-700');
+    }
 }
 
 function handleLevelSelect(event) {
@@ -388,6 +473,259 @@ async function loadStats() {
     } catch (error) { 
         console.error('Error loading stats:', error); 
     }
+}
+
+async function loadLevelCharts() {
+    try {
+        const [level1Response, level2Response] = await Promise.all([
+            fetch('/api/level_chart_data?level=1'),
+            fetch('/api/level_chart_data?level=2')
+        ]);
+        
+        const level1Data = await level1Response.json();
+        const level2Data = await level2Response.json();
+        
+        updateLevel1Chart(level1Data);
+        updateLevel2Chart(level2Data);
+    } catch (error) {
+        console.error('Error loading level charts:', error);
+    }
+}
+
+function updateLevel1Chart(data) {
+    const ctx = document.getElementById('level-1-chart').getContext('2d');
+    if (level1Chart) level1Chart.destroy();
+    
+    const sortedData = data.sort((a, b) => b.avg_score - a.avg_score);
+    
+    level1Chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sortedData.map(item => item.name.length > 25 ? item.name.substring(0, 25) + '...' : item.name),
+            datasets: [{
+                label: 'Automation Percentage',
+                data: sortedData.map(item => item.avg_score),
+                backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                        enabled: false,
+                        external: function(context) {
+                            // Tooltip Element
+                            let tooltipEl = document.getElementById('chartjs-tooltip');
+
+                            // Create element on first render
+                            if (!tooltipEl) {
+                                tooltipEl = document.createElement('div');
+                                tooltipEl.id = 'chartjs-tooltip';
+                                tooltipEl.innerHTML = '<table></table>';
+                                document.body.appendChild(tooltipEl);
+                            }
+
+                            // Hide if no tooltip
+                            const tooltipModel = context.tooltip;
+                            if (tooltipModel.opacity === 0) {
+                                tooltipEl.style.opacity = 0;
+                                return;
+                            }
+
+                            // Set caret Position
+                            tooltipEl.classList.remove('above', 'below', 'no-transform');
+                            if (tooltipModel.yAlign) {
+                                tooltipEl.classList.add(tooltipModel.yAlign);
+                            } else {
+                                tooltipEl.classList.add('no-transform');
+                            }
+
+                            function getBody(bodyItem) {
+                                return bodyItem.lines;
+                            }
+
+                            // Set Text
+                            if (tooltipModel.body) {
+                                const dataPoint = sortedData[tooltipModel.dataPoints[0].dataIndex];
+                                const titleLines = [dataPoint.name];
+                                const bodyLines = tooltipModel.body.map(getBody);
+
+                                let innerHtml = '<thead>';
+
+                                titleLines.forEach(function(title) {
+                                    innerHtml += '<tr><th>' + title + '</th></tr>';
+                                });
+                                innerHtml += '</thead><tbody>';
+
+                                innerHtml += '<tr><td>Automation: ' + tooltipModel.dataPoints[0].parsed.x + '%</td></tr>';
+                                innerHtml += '<tr><td>Jobs: ' + dataPoint.job_count.toLocaleString() + '</td></tr>';
+
+                                innerHtml += '</tbody>';
+
+                                let tableRoot = tooltipEl.querySelector('table');
+                                tableRoot.innerHTML = innerHtml;
+                            }
+
+                            const position = context.chart.canvas.getBoundingClientRect();
+
+                            // Display, position, and set styles for font
+                            tooltipEl.style.opacity = 1;
+                            tooltipEl.style.position = 'absolute';
+                            tooltipEl.style.left = position.left + window.pageXOffset + tooltipModel.caretX + 'px';
+                            tooltipEl.style.top = position.top + window.pageYOffset + tooltipModel.caretY + 'px';
+                            tooltipEl.style.fontFamily = tooltipModel.options.bodyFontFamily;
+                            tooltipEl.style.fontSize = tooltipModel.options.bodyFontSize + 'px';
+                            tooltipEl.style.fontStyle = tooltipModel.options.bodyFontStyle;
+                            tooltipEl.style.padding = tooltipModel.options.padding + 'px ' + tooltipModel.options.padding + 'px';
+                            tooltipEl.style.pointerEvents = 'none';
+                            tooltipEl.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                            tooltipEl.style.color = 'white';
+                            tooltipEl.style.borderRadius = '6px';
+                            tooltipEl.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                            tooltipEl.style.zIndex = '1000';
+                        }
+                    }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) { return value + '%'; }
+                    }
+                },
+                y: {
+                    ticks: {
+                        font: { size: 12 }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateLevel2Chart(data) {
+    const ctx = document.getElementById('level-2-chart').getContext('2d');
+    if (level2Chart) level2Chart.destroy();
+    
+    const sortedData = data.sort((a, b) => b.avg_score - a.avg_score);
+    
+    level2Chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sortedData.map(item => item.name.length > 30 ? item.name.substring(0, 30) + '...' : item.name),
+            datasets: [{
+                label: 'Automation Percentage',
+                data: sortedData.map(item => item.avg_score),
+                backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                borderColor: 'rgba(34, 197, 94, 1)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                        enabled: false,
+                        external: function(context) {
+                            // Tooltip Element
+                            let tooltipEl = document.getElementById('chartjs-tooltip');
+
+                            // Create element on first render
+                            if (!tooltipEl) {
+                                tooltipEl = document.createElement('div');
+                                tooltipEl.id = 'chartjs-tooltip';
+                                tooltipEl.innerHTML = '<table></table>';
+                                document.body.appendChild(tooltipEl);
+                            }
+
+                            // Hide if no tooltip
+                            const tooltipModel = context.tooltip;
+                            if (tooltipModel.opacity === 0) {
+                                tooltipEl.style.opacity = 0;
+                                return;
+                            }
+
+                            // Set caret Position
+                            tooltipEl.classList.remove('above', 'below', 'no-transform');
+                            if (tooltipModel.yAlign) {
+                                tooltipEl.classList.add(tooltipModel.yAlign);
+                            } else {
+                                tooltipEl.classList.add('no-transform');
+                            }
+
+                            function getBody(bodyItem) {
+                                return bodyItem.lines;
+                            }
+
+                            // Set Text
+                            if (tooltipModel.body) {
+                                const dataPoint = sortedData[tooltipModel.dataPoints[0].dataIndex];
+                                const titleLines = [dataPoint.name];
+                                const bodyLines = tooltipModel.body.map(getBody);
+
+                                let innerHtml = '<thead>';
+
+                                titleLines.forEach(function(title) {
+                                    innerHtml += '<tr><th>' + title + '</th></tr>';
+                                });
+                                innerHtml += '</thead><tbody>';
+
+                                innerHtml += '<tr><td>Automation: ' + tooltipModel.dataPoints[0].parsed.x + '%</td></tr>';
+                                innerHtml += '<tr><td>Jobs: ' + dataPoint.job_count.toLocaleString() + '</td></tr>';
+
+                                innerHtml += '</tbody>';
+
+                                let tableRoot = tooltipEl.querySelector('table');
+                                tableRoot.innerHTML = innerHtml;
+                            }
+
+                            const position = context.chart.canvas.getBoundingClientRect();
+                            const container = context.chart.canvas.closest('.overflow-x-auto');
+                            const containerScrollLeft = container ? container.scrollLeft : 0;
+
+                            // Display, position, and set styles for font
+                            tooltipEl.style.opacity = 1;
+                            tooltipEl.style.position = 'absolute';
+                            tooltipEl.style.left = position.left + window.pageXOffset + tooltipModel.caretX - containerScrollLeft + 'px';
+                            tooltipEl.style.top = position.top + window.pageYOffset + tooltipModel.caretY + 'px';
+                            tooltipEl.style.fontFamily = tooltipModel.options.bodyFontFamily;
+                            tooltipEl.style.fontSize = tooltipModel.options.bodyFontSize + 'px';
+                            tooltipEl.style.fontStyle = tooltipModel.options.bodyFontStyle;
+                            tooltipEl.style.padding = tooltipModel.options.padding + 'px ' + tooltipModel.options.padding + 'px';
+                            tooltipEl.style.pointerEvents = 'none';
+                            tooltipEl.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                            tooltipEl.style.color = 'white';
+                            tooltipEl.style.borderRadius = '6px';
+                            tooltipEl.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                            tooltipEl.style.zIndex = '1000';
+                        }
+                    }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) { return value + '%'; }
+                    }
+                },
+                y: {
+                    ticks: {
+                        font: { size: 11 }
+                    }
+                }
+            }
+        }
+    });
 }
 
 async function loadLevels() {
