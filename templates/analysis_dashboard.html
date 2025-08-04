@@ -461,7 +461,7 @@ function initializeD3HierarchyChart() {
     const gLink = g.append("g").attr("class", "link-group");
     const gNode = g.append("g").attr("class", "node-group-container");
 
-    const tree = d3.tree().nodeSize([30, 300]); // Increased spacing between nodes
+    const tree = d3.tree().nodeSize([60, 400]); // Increased spacing between nodes
     let root;
     const duration = 750;
 
@@ -554,8 +554,8 @@ function initializeD3HierarchyChart() {
             .on("mouseout", mouseout);
 
         // *** FIXED: Wider bar for better text fitting ***
-        const barWidth = 170;
-        const barHeight = 24;
+        const barWidth = 190;
+        const barHeight = 40;
         nodeEnter.append("rect")
             .attr("class", "node-bar-bg")
             .attr("x", 5)
