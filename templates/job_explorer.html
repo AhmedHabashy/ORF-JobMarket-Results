@@ -258,7 +258,7 @@
         let automationChart = null;
         let riskChart = null;
         let currentPage = 1;
-        const jobsPerPage = 4;
+        const jobsPerPage = 12;
         let hasMoreJobs = false;
         let selectedCategory = '';
         let selectedLevel = '4';
@@ -415,7 +415,7 @@
                 } else {
                     allJobsData = [...allJobsData, ...data.jobs];
                 }
-                
+
                 hasMoreJobs = data.has_more;
                 populateJobFilter(allJobsData);
                 renderJobCards(data.jobs);
