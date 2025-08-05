@@ -203,27 +203,28 @@
         </div>
         
         <!-- Level Charts Side by Side -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Level 1 Chart -->
-            <div class="modern-card rounded-xl shadow-lg p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Level 1 Categories</h3>
-                <div class="relative overflow-x-auto">
-                    <div style="min-width: 600px; height: 500px;">
-                        <canvas id="level-1-chart"></canvas>
-                    </div>
-                </div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Level 1 Chart -->
+    <div class="modern-card rounded-xl shadow-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Level 1 Categories</h3>
+        <div class="relative overflow-y-auto">
+            <div style="height: 500px;">
+                <canvas id="level-1-chart"></canvas>
             </div>
-            
-            <!-- Level 2 Chart -->
-            <div class="modern-card rounded-xl shadow-lg p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Level 2 Categories</h3>
-                <div class="relative overflow-x-auto">
-                    <div style="min-width: 800px; height: 500px;">
-                        <canvas id="level-2-chart"></canvas>
-                    </div>
+        </div>
+    </div>
+    
+    <!-- Level 2 Chart -->
+    <!-- Level 2 Chart -->
+        <div class="modern-card rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Level 2 Categories</h3>
+            <div class="relative overflow-y-auto" style="max-height: 500px;">
+                <div id="level-2-chart-container">
+                    <canvas id="level-2-chart"></canvas>
                 </div>
             </div>
         </div>
+</div>
 </section>
 <!-- END: Level-based Bar Charts Section -->
 
@@ -272,14 +273,14 @@
 
     <!-- Task Analysis Stats -->
     <section id="task-stats" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 hidden">
-        <div class="grid grid-cols-1 md:grid-cols-6 gap-6">
-            <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
-                <div class="text-3xl font-bold text-blue-600" id="total-tasks">-</div>
-                <div class="text-sm text-gray-500 mt-1">Total Tasks</div>
-            </div>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
             <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
                 <div class="text-3xl font-bold text-green-600" id="total-jobs-filtered">-</div>
                 <div class="text-sm text-gray-500 mt-1">Jobs in Selection</div>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-blue-600" id="total-tasks">-</div>
+                <div class="text-sm text-gray-500 mt-1">Tasks</div>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
                 <div class="text-3xl font-bold text-red-600" id="automatable-tasks">-</div>
@@ -287,15 +288,11 @@
             </div>
             <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
                 <div class="text-3xl font-bold text-gray-600" id="non-automatable-tasks">-</div>
-                <div class="text-sm text-gray-500 mt-1">Non-Automatable Tasks</div>
+                <div class="text-sm text-gray-500 mt-1">Non-Auto Tasks</div>
             </div>
             <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
                 <div class="text-3xl font-bold text-orange-600" id="selection-avg-auto">-</div>
-                <div class="text-sm text-gray-500 mt-1">Selection Avg Automation Score</div>
-            </div>
-            <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
-                <div class="text-3xl font-bold text-purple-600" id="selection-avg-manual">-</div>
-                <div class="text-sm text-gray-500 mt-1">Selection Avg Manual Score</div>
+                <div class="text-sm text-gray-500 mt-1">Avg Auto Score</div>
             </div>
         </div>
     </section>
@@ -592,19 +589,19 @@ function updateLevel1Chart(data) {
                     }
             },
             scales: {
-                x: {
-                    beginAtZero: true,
-                    max: 100,
-                    ticks: {
-                        callback: function(value) { return value + '%'; }
-                    }
-                },
-                y: {
-                    ticks: {
-                        font: { size: 12 }
+                    x: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) { return value + '%'; }
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            font: { size: 12, weight: 'bold' }
+                        }
                     }
                 }
-            }
         }
     });
 }
@@ -615,117 +612,125 @@ function updateLevel2Chart(data) {
     
     const sortedData = data.sort((a, b) => b.avg_score - a.avg_score);
     
-    level2Chart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: sortedData.map(item => item.name.length > 30 ? item.name.substring(0, 30) + '...' : item.name),
-            datasets: [{
-                label: 'Automation Percentage',
-                data: sortedData.map(item => item.avg_score),
-                backgroundColor: 'rgba(34, 197, 94, 0.8)',
-                borderColor: 'rgba(34, 197, 94, 1)',
-                borderWidth: 2
-            }]
+    // Calculate dynamic height based on number of categories (same spacing as Level 1)
+const barHeight = sortedData.length * 40; // 40px per bar to match Level 1 spacing
+const minHeight = 500;
+const chartHeight = Math.max(barHeight, minHeight);
+
+// Update the canvas container height
+ctx.canvas.parentElement.style.height = chartHeight + 'px';
+
+level2Chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: sortedData.map(item => item.name.length > 30 ? item.name.substring(0, 30) + '...' : item.name),
+        datasets: [{
+            label: 'Automation Percentage',
+            data: sortedData.map(item => item.avg_score),
+            // backgroundColor: 'rgba(34, 197, 94, 0.8)',
+            backgroundColor: 'rgba(99, 102, 241, 0.8)',
+            // borderColor: 'rgba(34, 197, 94, 1)',
+            borderColor: 'rgba(99, 102, 241, 1)',
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                enabled: false,
+                external: function(context) {
+                    // Tooltip Element
+                    let tooltipEl = document.getElementById('chartjs-tooltip');
+
+                    // Create element on first render
+                    if (!tooltipEl) {
+                        tooltipEl = document.createElement('div');
+                        tooltipEl.id = 'chartjs-tooltip';
+                        tooltipEl.innerHTML = '<table></table>';
+                        document.body.appendChild(tooltipEl);
+                    }
+
+                    // Hide if no tooltip
+                    const tooltipModel = context.tooltip;
+                    if (tooltipModel.opacity === 0) {
+                        tooltipEl.style.opacity = 0;
+                        return;
+                    }
+
+                    // Set caret Position
+                    tooltipEl.classList.remove('above', 'below', 'no-transform');
+                    if (tooltipModel.yAlign) {
+                        tooltipEl.classList.add(tooltipModel.yAlign);
+                    } else {
+                        tooltipEl.classList.add('no-transform');
+                    }
+
+                    function getBody(bodyItem) {
+                        return bodyItem.lines;
+                    }
+
+                    // Set Text
+                    if (tooltipModel.body) {
+                        const dataPoint = sortedData[tooltipModel.dataPoints[0].dataIndex];
+                        const titleLines = [dataPoint.name];
+                        const bodyLines = tooltipModel.body.map(getBody);
+
+                        let innerHtml = '<thead>';
+
+                        titleLines.forEach(function(title) {
+                            innerHtml += '<tr><th>' + title + '</th></tr>';
+                        });
+                        innerHtml += '</thead><tbody>';
+
+                        innerHtml += '<tr><td>Automation: ' + tooltipModel.dataPoints[0].parsed.x + '%</td></tr>';
+                        innerHtml += '<tr><td>Jobs: ' + dataPoint.job_count.toLocaleString() + '</td></tr>';
+
+                        innerHtml += '</tbody>';
+
+                        let tableRoot = tooltipEl.querySelector('table');
+                        tableRoot.innerHTML = innerHtml;
+                    }
+
+                    const position = context.chart.canvas.getBoundingClientRect();
+
+                    // Display, position, and set styles for font
+                    tooltipEl.style.opacity = 1;
+                    tooltipEl.style.position = 'absolute';
+                    tooltipEl.style.left = position.left + window.pageXOffset + tooltipModel.caretX + 10 + 'px';
+                    tooltipEl.style.top = position.top + window.pageYOffset + tooltipModel.caretY - 40 + 'px';
+                    tooltipEl.style.fontFamily = tooltipModel.options.bodyFontFamily;
+                    tooltipEl.style.fontSize = tooltipModel.options.bodyFontSize + 'px';
+                    tooltipEl.style.fontStyle = tooltipModel.options.bodyFontStyle;
+                    tooltipEl.style.padding = tooltipModel.options.padding + 'px ' + tooltipModel.options.padding + 'px';
+                    tooltipEl.style.pointerEvents = 'none';
+                    tooltipEl.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                    tooltipEl.style.color = 'white';
+                    tooltipEl.style.borderRadius = '6px';
+                    tooltipEl.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                    tooltipEl.style.zIndex = '1000';
+                }
+            }
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            indexAxis: 'y',
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                        enabled: false,
-                        external: function(context) {
-                            // Tooltip Element
-                            let tooltipEl = document.getElementById('chartjs-tooltip');
-
-                            // Create element on first render
-                            if (!tooltipEl) {
-                                tooltipEl = document.createElement('div');
-                                tooltipEl.id = 'chartjs-tooltip';
-                                tooltipEl.innerHTML = '<table></table>';
-                                document.body.appendChild(tooltipEl);
-                            }
-
-                            // Hide if no tooltip
-                            const tooltipModel = context.tooltip;
-                            if (tooltipModel.opacity === 0) {
-                                tooltipEl.style.opacity = 0;
-                                return;
-                            }
-
-                            // Set caret Position
-                            tooltipEl.classList.remove('above', 'below', 'no-transform');
-                            if (tooltipModel.yAlign) {
-                                tooltipEl.classList.add(tooltipModel.yAlign);
-                            } else {
-                                tooltipEl.classList.add('no-transform');
-                            }
-
-                            function getBody(bodyItem) {
-                                return bodyItem.lines;
-                            }
-
-                            // Set Text
-                            if (tooltipModel.body) {
-                                const dataPoint = sortedData[tooltipModel.dataPoints[0].dataIndex];
-                                const titleLines = [dataPoint.name];
-                                const bodyLines = tooltipModel.body.map(getBody);
-
-                                let innerHtml = '<thead>';
-
-                                titleLines.forEach(function(title) {
-                                    innerHtml += '<tr><th>' + title + '</th></tr>';
-                                });
-                                innerHtml += '</thead><tbody>';
-
-                                innerHtml += '<tr><td>Automation: ' + tooltipModel.dataPoints[0].parsed.x + '%</td></tr>';
-                                innerHtml += '<tr><td>Jobs: ' + dataPoint.job_count.toLocaleString() + '</td></tr>';
-
-                                innerHtml += '</tbody>';
-
-                                let tableRoot = tooltipEl.querySelector('table');
-                                tableRoot.innerHTML = innerHtml;
-                            }
-
-                            const position = context.chart.canvas.getBoundingClientRect();
-                            const container = context.chart.canvas.closest('.overflow-x-auto');
-                            const containerScrollLeft = container ? container.scrollLeft : 0;
-
-                            // Display, position, and set styles for font
-                            tooltipEl.style.opacity = 1;
-                            tooltipEl.style.position = 'absolute';
-                            tooltipEl.style.left = position.left + window.pageXOffset + tooltipModel.caretX - containerScrollLeft + 'px';
-                            tooltipEl.style.top = position.top + window.pageYOffset + tooltipModel.caretY + 'px';
-                            tooltipEl.style.fontFamily = tooltipModel.options.bodyFontFamily;
-                            tooltipEl.style.fontSize = tooltipModel.options.bodyFontSize + 'px';
-                            tooltipEl.style.fontStyle = tooltipModel.options.bodyFontStyle;
-                            tooltipEl.style.padding = tooltipModel.options.padding + 'px ' + tooltipModel.options.padding + 'px';
-                            tooltipEl.style.pointerEvents = 'none';
-                            tooltipEl.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-                            tooltipEl.style.color = 'white';
-                            tooltipEl.style.borderRadius = '6px';
-                            tooltipEl.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-                            tooltipEl.style.zIndex = '1000';
-                        }
-                    }
+        scales: {
+            x: {
+                beginAtZero: true,
+                max: 100,
+                ticks: {
+                    callback: function(value) { return value + '%'; }
+                }
             },
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    max: 100,
-                    ticks: {
-                        callback: function(value) { return value + '%'; }
-                    }
-                },
-                y: {
-                    ticks: {
-                        font: { size: 11 }
-                    }
+            y: {
+                ticks: {
+                    font: { size: 12, weight: 'bold' } // Match Level 1 font size
                 }
             }
         }
-    });
+    }
+});
 }
 
 async function loadLevels() {
@@ -1091,7 +1096,6 @@ function updateTaskStats(data) {
     const selectionManualScore = 100 - selectionAutoScore;
     
     document.getElementById('selection-avg-auto').textContent = selectionAutoScore.toFixed(1) + '%';
-    document.getElementById('selection-avg-manual').textContent = selectionManualScore.toFixed(1) + '%';
 }
 
 function updateAllCharts(data, matrixData, riskData, jobsData) {
@@ -1481,7 +1485,7 @@ function updateAutomationMatrixChart(matrixData) {
 
     const datasets = [
         {
-            label: 'Niche/Specialized Low Risk Vulnerable Core',
+            label: 'Low Risk Vulnerable Core',
             data: quadrantData.upper_left,
             backgroundColor: '#8B5CF6',
             borderColor: '#7C3AED',
@@ -1499,7 +1503,7 @@ function updateAutomationMatrixChart(matrixData) {
             pointHoverRadius: 9
         },
         {
-            label: 'Safe and Stable Low Risk Secure Core',
+            label: 'Low Risk Secure Core',
             data: quadrantData.lower_left,
             backgroundColor: '#10B981',
             borderColor: '#059669',
@@ -1508,7 +1512,7 @@ function updateAutomationMatrixChart(matrixData) {
             pointHoverRadius: 9
         },
         {
-            label: 'Transformative Hot Spot High Risk Secure Core',
+            label: 'High Risk Secure Core',
             data: quadrantData.lower_right,
             backgroundColor: '#F59E0B',
             borderColor: '#D97706',
