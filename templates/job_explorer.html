@@ -157,7 +157,7 @@
     </section>
 
     <!-- Category Stats (hidden initially) -->
-    <section id="category-stats" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 hidden">
+    <!-- <section id="category-stats" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 hidden">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-6 text-center">
                 <div class="text-3xl font-bold text-blue-600" id="category-job-count">-</div>
@@ -172,10 +172,10 @@
                 <div class="text-sm text-gray-500 mt-1">Selection Avg Manual %</div>
             </div>
         </div>
-    </section>
+    </section> -->
 
     <!-- Charts Section (hidden initially) -->
-    <section id="charts-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 hidden">
+    <!-- <section id="charts-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 hidden">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="modern-card rounded-xl shadow-lg p-8">
                 <h3 class="text-xl font-bold text-gray-900 mb-6">Automation Score Distribution</h3>
@@ -190,7 +190,7 @@
                 </div>
             </div>
         </div>
-    </section>
+    </section> -->
 
     <!-- Job Cards Section (hidden initially) -->
     <section id="job-cards-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 hidden">
@@ -392,20 +392,26 @@
                 const response = await fetch(`/api/jobs?category=${encodeURIComponent(category)}&level=${level}&page=${page}&per_page=${jobsPerPage}`);
                 const data = await response.json();
                 
+                // if (page === 1) {
+                //     allJobsData = data.jobs;
+                //     updateCategoryStats(data.category_stats);
+                //     clearJobCards();
+                    
+                //     // Load chart data
+                //     fetchAllJobsForChart(category, level).then(chartData => {
+                //         updateAutomationChart(chartData);
+                //     });
+                    
+                //     // Load risk distribution
+                //     fetchRiskDistribution(category, level).then(riskData => {
+                //         updateRiskChart(riskData);
+                //     });
+                // } else {
+                //     allJobsData = [...allJobsData, ...data.jobs];
+                // }
                 if (page === 1) {
                     allJobsData = data.jobs;
-                    updateCategoryStats(data.category_stats);
                     clearJobCards();
-                    
-                    // Load chart data
-                    fetchAllJobsForChart(category, level).then(chartData => {
-                        updateAutomationChart(chartData);
-                    });
-                    
-                    // Load risk distribution
-                    fetchRiskDistribution(category, level).then(riskData => {
-                        updateRiskChart(riskData);
-                    });
                 } else {
                     allJobsData = [...allJobsData, ...data.jobs];
                 }
@@ -471,7 +477,7 @@
 
         // --- UI MANIPULATION & RENDERING ---
         function hideAllSections() {
-            ['category-stats', 'charts-section', 'job-cards-section', 'job-detail-section'].forEach(id => {
+            ['job-cards-section', 'job-detail-section'].forEach(id => {
                 document.getElementById(id).classList.add('hidden');
             });
             document.getElementById('job-filter-container').classList.add('hidden');
