@@ -15,7 +15,8 @@ def load_job_data():
     if job_data is not None:
         return True
     try:
-        df = pd.read_excel('job_data.xlsx')
+        # df = pd.read_excel('job_data.xlsx')
+        df = pd.read_csv('./job_data.csv')
         df['auto_score'] = pd.to_numeric(df['auto_score'], errors='coerce')
         df['manual_score'] = pd.to_numeric(df['manual_score'], errors='coerce')
         df.dropna(subset=['auto_score', 'manual_score'], inplace=True)
@@ -194,7 +195,7 @@ def get_jobs():
     for _, row in paginated_data.iterrows():
         job_dict = {
             'Job_Title': row['Job_Title'],
-            'Job_Description': row['Job_Description'],
+            # 'Job_Description': row['Job_Description'],
             f'level_{level}_name': row.get(f'level_{level}_name', ''),
             f'level_{level}_code': row.get(f'level_{level}_code', ''),
             'auto_score': round(row['auto_score'], 1),
@@ -235,7 +236,7 @@ def get_job_detail(job_title):
         
         job_detail = {
             'Job_Title': job_row['Job_Title'],
-            'Job_Description': job_row['Job_Description'],
+            # 'Job_Description': job_row['Job_Description'],
             'level_1_name': job_row.get('level_1_name', ''),
             'level_2_name': job_row.get('level_2_name', ''),
             'level_3_name': job_row.get('level_3_name', ''),
